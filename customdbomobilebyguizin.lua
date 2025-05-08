@@ -257,37 +257,7 @@ FollowAttack.getDirection = function(playerPos, direction)
     return playerPos;
 end
 
--- Ícone "Follow Attack"
-FollowAttack.Icon = addIcon("Follow Attack", {item=7657, text="Follow Attack"}, macro(1, function()
-    if (not g_game.isAttacking() or g_game.isAttacking() and not g_game.getAttackingCreature():isPlayer()) then return; end
 
-    local playerPos = pos();
-    local target = g_game.getAttackingCreature();
-    local targetPosition = target:getPosition();
-    
-    -- Verifica a distância para o alvo
-    if (getDistanceBetween(playerPos, targetPosition) == 0) then g_game.setChaseMode(0) end
-    if (getDistanceBetween(playerPos, targetPosition) <= 1) then return; end
-
-    local path = findPath(playerPos, targetPosition, 20, FollowAttack.flags);
-    if (not path) then return; end
-
-    local tileToUse = playerPos;
-    for i, value in ipairs(path) do 
-        if (i > 6) then break; end
-        tileToUse = FollowAttack.getDirection(tileToUse, value);
-    end
-    tileToUse = g_map.getTile(tileToUse);
-    use(tileToUse:getTopUseThing());
-end));
-
--- Mover o ícone para a direita
-FollowAttack.Icon:move(10, 100)  -- Move o ícone 10 pixels para a direita e 100 pixels para baixo (ajuste conforme necessário)
-
-
-  
-	Panels.AttackLeaderTarget(batTab)
-	addSeparator("sep", batTab)
 	
   
   local primeiro_foco = {'Rubinho Barrichello'}
