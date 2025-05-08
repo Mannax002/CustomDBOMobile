@@ -78,9 +78,6 @@ macro(1, function()
 end);
 
 
-
-
-setDefaultTab ('Tools')
 UI.Separator()
 
 local lastRegeneration;
@@ -158,10 +155,6 @@ FollowAttack = {
   end));
 
 UI.Separator()
-
-
-
-setDefaultTab ('Tools')
 
 
 local primeiro_foco = {'Rubinho Barrichello'}
