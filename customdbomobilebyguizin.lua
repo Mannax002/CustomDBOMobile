@@ -18,13 +18,13 @@ local cities = {
   'CC21'
 }
 -- adicione o nome do npc
-local npcName = 'Gravity Console';
+local npcName = 'Gate Keaper';
 
 
 -- não edita nada abaixo disso
 travelUI = setupUI([[
 UIWindow
-  !text: tr('Travel')
+  !text: tr('viajar')
   color: #99d6ff
   font: sans-bold-16px
   size: 100 100
