@@ -41,7 +41,7 @@
   
   test1 = addIcon("BugMap", {item = 3074, text = "BugMap"}, testMacro )
   test1:breakAnchors()
-  test1:move(10, 100) 
+  test1:move(150, 50) 
   
   local isStacking = false;
   local stackMonster = nil;
