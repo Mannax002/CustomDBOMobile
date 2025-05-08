@@ -1099,26 +1099,31 @@ modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mob
     
        
     
-         EnemyIcon = addIcon("Enemy", {item=7657, text="Enemy"}, macro(1, function()
-            local attcked = g_game.getAttackingCreature()
-            local analiseHP1 = 100
-            local analiseCID1 = nil
-          
-            for _, pla in ipairs(getSpectators(posz())) do
-              if not attcked or attcked:isMonster() or (attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent() * 0.6) then
-                if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-                  if pla:getHealthPercent() <= analiseHP1 then
+ EnemyIcon = addIcon("Enemy", {item=7657, text="Enemy"}, macro(1, function()
+    local attcked = g_game.getAttackingCreature()
+    local analiseHP1 = 100
+    local analiseCID1 = nil
+
+    for _, pla in ipairs(getSpectators(posz())) do
+        if not attcked or attcked:isMonster() or (attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent() * 0.6) then
+            if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+                if pla:getHealthPercent() <= analiseHP1 then
                     analiseHP1 = pla:getHealthPercent()
                     analiseCID1 = getCreatureById(pla:getId())
-                  end
                 end
-              end
             end
-          
-            if analiseCID1 ~= nil then
-              g_game.attack(analiseCID1)
-            end
-          end))
+        end
+    end
+
+    if analiseCID1 ~= nil then
+        g_game.attack(analiseCID1)
+    end
+end))
+
+-- Adicionando movimentação do ícone na tela
+EnemyIcon:breakAnchors()
+EnemyIcon:move(150, 260) -- Altere os valores X (300) e Y (260) conforme a posição desejada
+
   
           
 
@@ -1277,43 +1282,45 @@ modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mob
 
 
 
-          FollowAttack = {
-            flags = { ignoreNonPathable = true, precision = 0, ignoreCreatures = true },
-        };
-        
-        FollowAttack.getDirection = function(playerPos, direction)
-            if (direction == 0) then playerPos.y = playerPos.y - 1;
-            elseif (direction == 1) then playerPos.x = playerPos.x + 1;
-            elseif (direction == 2) then playerPos.y = playerPos.y + 1;
-            elseif (direction == 3) then playerPos.x = playerPos.x - 1;
-            end
-            return playerPos;
-        end
-        
-        -- Ícone "Follow Attack"
-        FollowAttack.Icon = addIcon("Follow Attack", {item=7657, text="Follow Attack"}, macro(1, function()
-            if (not g_game.isAttacking() or g_game.isAttacking() and not g_game.getAttackingCreature():isPlayer()) then return; end
-        
-            local playerPos = pos();
-            local target = g_game.getAttackingCreature();
-            local targetPosition = target:getPosition();
-            
-            -- Verifica a distância para o alvo
-            if (getDistanceBetween(playerPos, targetPosition) == 0) then g_game.setChaseMode(0) end
-            if (getDistanceBetween(playerPos, targetPosition) <= 1) then return; end
-        
-            local path = findPath(playerPos, targetPosition, 20, FollowAttack.flags);
-            if (not path) then return; end
-        
-            local tileToUse = playerPos;
-            for i, value in ipairs(path) do 
-                if (i > 6) then break; end
-                tileToUse = FollowAttack.getDirection(tileToUse, value);
-            end
-            tileToUse = g_map.getTile(tileToUse);
-            use(tileToUse:getTopUseThing());
-        end));
-        
-        -- Mover o ícone para a direita
-        FollowAttack.Icon:move(10, 100)  -- Move o ícone 10 pixels para a direita e 100 pixels para baixo (ajuste conforme necessário)
+       FollowAttack = {
+    flags = { ignoreNonPathable = true, precision = 0, ignoreCreatures = true },
+};
+
+FollowAttack.getDirection = function(playerPos, direction)
+    if (direction == 0) then playerPos.y = playerPos.y - 1;
+    elseif (direction == 1) then playerPos.x = playerPos.x + 1;
+    elseif (direction == 2) then playerPos.y = playerPos.y + 1;
+    elseif (direction == 3) then playerPos.x = playerPos.x - 1;
+    end
+    return playerPos;
+end
+
+-- Ícone "Follow Attack"
+FollowAttack.Icon = addIcon("Follow Attack", {item=7657, text="Follow Attack"}, macro(1, function()
+    if (not g_game.isAttacking() or g_game.isAttacking() and not g_game.getAttackingCreature():isPlayer()) then return; end
+
+    local playerPos = pos();
+    local target = g_game.getAttackingCreature();
+    local targetPosition = target:getPosition();
+
+    -- Verifica a distância para o alvo
+    if (getDistanceBetween(playerPos, targetPosition) == 0) then g_game.setChaseMode(0) end
+    if (getDistanceBetween(playerPos, targetPosition) <= 1) then return; end
+
+    local path = findPath(playerPos, targetPosition, 20, FollowAttack.flags);
+    if (not path) then return; end
+
+    local tileToUse = playerPos;
+    for i, value in ipairs(path) do 
+        if (i > 6) then break; end
+        tileToUse = FollowAttack.getDirection(tileToUse, value);
+    end
+    tileToUse = g_map.getTile(tileToUse);
+    use(tileToUse:getTopUseThing());
+end))
+
+-- Liberar âncoras e mover o ícone
+FollowAttack.Icon:breakAnchors()
+FollowAttack.Icon:move(150, 160)  -- Altere os valores X/Y conforme onde você quer posicioná-lo
+
         
