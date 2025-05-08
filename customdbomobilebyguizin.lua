@@ -154,9 +154,6 @@ FollowAttack = {
 	use(tileToUse:getTopUseThing());
   end));
 
-UI.Separator();
-
-
 local primeiro_foco = {'Rubinho Barrichello'}
 
 local segundo_foco = {'DanielAuregliett'}
