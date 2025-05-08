@@ -1,4 +1,4 @@
--- tools tab
+setDefaultTab ('Tools')
 
 tpky = 0
 tpkx = 0
@@ -1603,7 +1603,6 @@ storage.Spells = text
 end)
 
 
-setDefaultTab ('cave')
 addSeparator ()
 
 macro(100, "CC21 MAGIA+AREA", function()
@@ -1812,7 +1811,7 @@ macro(1, "Mystic 30% ", function()
 	
 
 
-setDefaultTab ('Tools')
+
 
 macro(3000, "Buffz All", function()
 	if not hasPartyBuff() then
