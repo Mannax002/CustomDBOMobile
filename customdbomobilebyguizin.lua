@@ -1,5 +1,3 @@
-setDefaultTab ('Tools')
-
 -- tools tab
 
 tpky = 0
@@ -165,8 +163,183 @@ UI.Separator()
 
 setDefaultTab ('Tools')
 
-UI.Separator()
 
+local primeiro_foco = {'Rubinho Barrichello'}
+
+local segundo_foco = {'DanielAuregliett'}
+
+local terceiro_foco = {'IgorKarkaroff', 'JaoTIpoPIRANHA'}
+
+local quarto_foco = {'HAFIKI', 'GLEISSAOTANKDEGUERRA', '	HASHIRAMAcarniceiro'}
+
+macro(100, "Enemy All", function()
+
+attcked = g_game.getAttackingCreature()
+
+local analiseHP2 = 100
+
+local analiseCID2 = nil
+
+for _, pla in ipairs(getSpectators(posz())) do
+if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+if table.find(primeiro_foco, pla:getName()) then
+g_game.attack(pla)
+return
+end
+end
+end
+end
+
+for _, pla in ipairs(getSpectators(posz())) do
+if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+if table.find(segundo_foco, pla:getName()) then
+g_game.attack(pla)
+return
+end
+end
+end
+end
+
+for _, pla in ipairs(getSpectators(posz())) do
+if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+if table.find(terceiro_foco, pla:getName()) then
+g_game.attack(pla)
+return
+end
+end
+end
+end
+
+for _, pla in ipairs(getSpectators(posz())) do
+if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+if table.find(quarto_foco, pla:getName()) then
+g_game.attack(pla)
+return
+end
+end
+end
+end
+
+for _, pla in ipairs(getSpectators(posz())) do
+if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+
+if pla:getHealthPercent() <= analiseHP2 then
+analiseHP2 = pla:getHealthPercent()
+analiseCID2 = getCreatureById(pla:getId())
+end
+
+end
+end
+end
+
+if analiseCID2 ~= nil then
+g_game.attack(analiseCID2)
+return
+end
+
+end)
+
+
+
+
+macro(200, "Yellow Skull%", function() -- ATACAR YELLOW COM MENOS HP
+
+for _, pla in ipairs(getSpectators(posz())) do
+
+attacked = g_game.getAttackingCreature()
+
+if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla ~= player and pla:getHealthPercent() < 90 and pla:getEmblem() ~= 1 and pla:getSkull() == 1 and pla:getShield() <= 2 then 
+g_game.attack(pla)
+end
+end
+
+end
+
+delay(100)
+
+end)
+
+
+macro(100, function()
+
+if player:getShield() == 3 or player:getShield() == 5 or player:getShield() == 7 or player:getShield() == 9 then return end
+
+for _, pla in ipairs(getSpectators(posz())) do
+
+if pla:isPlayer() and pla:getEmblem() == 1 and pla:isPartyLeader() then 
+g_game.partyJoin(pla:getId())
+end
+
+end
+
+end)
+
+
+macro(200, "White Skull PK%", function() -- ATACAR O PK COM MENOS HP
+
+for _, pla in ipairs(getSpectators(posz())) do
+
+attacked = g_game.getAttackingCreature()
+
+if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla ~= player and pla:getHealthPercent() <85 and pla:getEmblem() ~= 1 and pla:getSkull() == 3 and pla:getShield() <= 2 then 
+g_game.attack(pla)
+end
+end
+
+end
+
+delay(100)
+
+end)
+
+macro(200, "White Skull All", function() -- ATACAR QUALQUER PK
+
+for _, pla in ipairs(getSpectators(posz())) do
+
+attacked = g_game.getAttackingCreature()
+
+if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
+if pla:isPlayer() and pla ~= player and pla:getEmblem() ~= 1 and pla:getSkull() == 3 and pla:getShield() <= 2 then 
+g_game.attack(pla)
+end
+end
+
+end
+
+delay(100)
+
+end)
+
+
+
+EnemyIcon = addIcon("Enemy", {item=7657, text="Enemy"}, macro(1, function()
+	local attcked = g_game.getAttackingCreature()
+	local analiseHP1 = 100
+	local analiseCID1 = nil
+  
+	for _, pla in ipairs(getSpectators(posz())) do
+	  if not attcked or attcked:isMonster() or (attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent() * 0.6) then
+		if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
+		  if pla:getHealthPercent() <= analiseHP1 then
+			analiseHP1 = pla:getHealthPercent()
+			analiseCID1 = getCreatureById(pla:getId())
+		  end
+		end
+	  end
+	end
+  
+	if analiseCID1 ~= nil then
+	  g_game.attack(analiseCID1)
+	end
+  end))
+  
 UI.Separator()
 
 
@@ -1103,185 +1276,7 @@ UI.Separator()
 		 end
 	 end);
 
-
-
-local primeiro_foco = {'Rubinho Barrichello'}
-
-local segundo_foco = {'DanielAuregliett'}
-
-local terceiro_foco = {'IgorKarkaroff', 'JaoTIpoPIRANHA'}
-
-local quarto_foco = {'HAFIKI', 'GLEISSAOTANKDEGUERRA', '	HASHIRAMAcarniceiro'}
-
-macro(100, "Enemy All", function()
-
-attcked = g_game.getAttackingCreature()
-
-local analiseHP2 = 100
-
-local analiseCID2 = nil
-
-for _, pla in ipairs(getSpectators(posz())) do
-if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-if table.find(primeiro_foco, pla:getName()) then
-g_game.attack(pla)
-return
-end
-end
-end
-end
-
-for _, pla in ipairs(getSpectators(posz())) do
-if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-if table.find(segundo_foco, pla:getName()) then
-g_game.attack(pla)
-return
-end
-end
-end
-end
-
-for _, pla in ipairs(getSpectators(posz())) do
-if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-if table.find(terceiro_foco, pla:getName()) then
-g_game.attack(pla)
-return
-end
-end
-end
-end
-
-for _, pla in ipairs(getSpectators(posz())) do
-if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-if table.find(quarto_foco, pla:getName()) then
-g_game.attack(pla)
-return
-end
-end
-end
-end
-
-for _, pla in ipairs(getSpectators(posz())) do
-if not attcked or attcked:isMonster() or attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-
-if pla:getHealthPercent() <= analiseHP2 then
-analiseHP2 = pla:getHealthPercent()
-analiseCID2 = getCreatureById(pla:getId())
-end
-
-end
-end
-end
-
-if analiseCID2 ~= nil then
-g_game.attack(analiseCID2)
-return
-end
-
-end)
-
-
-
-
-macro(200, "Yellow Skull%", function() -- ATACAR YELLOW COM MENOS HP
-
-for _, pla in ipairs(getSpectators(posz())) do
-
-attacked = g_game.getAttackingCreature()
-
-if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla ~= player and pla:getHealthPercent() < 90 and pla:getEmblem() ~= 1 and pla:getSkull() == 1 and pla:getShield() <= 2 then 
-g_game.attack(pla)
-end
-end
-
-end
-
-delay(100)
-
-end)
-
-
-macro(100, function()
-
-if player:getShield() == 3 or player:getShield() == 5 or player:getShield() == 7 or player:getShield() == 9 then return end
-
-for _, pla in ipairs(getSpectators(posz())) do
-
-if pla:isPlayer() and pla:getEmblem() == 1 and pla:isPartyLeader() then 
-g_game.partyJoin(pla:getId())
-end
-
-end
-
-end)
-
-
-macro(200, "White Skull PK%", function() -- ATACAR O PK COM MENOS HP
-
-for _, pla in ipairs(getSpectators(posz())) do
-
-attacked = g_game.getAttackingCreature()
-
-if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla ~= player and pla:getHealthPercent() <85 and pla:getEmblem() ~= 1 and pla:getSkull() == 3 and pla:getShield() <= 2 then 
-g_game.attack(pla)
-end
-end
-
-end
-
-delay(100)
-
-end)
-
-macro(200, "White Skull All", function() -- ATACAR QUALQUER PK
-
-for _, pla in ipairs(getSpectators(posz())) do
-
-attacked = g_game.getAttackingCreature()
-
-if not attacked or attacked:isMonster() or attacked:isPlayer() and pla:getHealthPercent() < attacked:getHealthPercent()*0.6 then
-if pla:isPlayer() and pla ~= player and pla:getEmblem() ~= 1 and pla:getSkull() == 3 and pla:getShield() <= 2 then 
-g_game.attack(pla)
-end
-end
-
-end
-
-delay(100)
-
-end)
-
-
-
-EnemyIcon = addIcon("Enemy", {item=7657, text="Enemy"}, macro(1, function()
-	local attcked = g_game.getAttackingCreature()
-	local analiseHP1 = 100
-	local analiseCID1 = nil
-  
-	for _, pla in ipairs(getSpectators(posz())) do
-	  if not attcked or attcked:isMonster() or (attcked:isPlayer() and pla:getHealthPercent() <= attcked:getHealthPercent() * 0.6) then
-		if pla:isPlayer() and pla:getEmblem() ~= 1 and pla:getShield() <= 2 then
-		  if pla:getHealthPercent() <= analiseHP1 then
-			analiseHP1 = pla:getHealthPercent()
-			analiseCID1 = getCreatureById(pla:getId())
-		  end
-		end
-	  end
-	end
-  
-	if analiseCID1 ~= nil then
-	  g_game.attack(analiseCID1)
-	end
-  end))
-  
-UI.Separator()
+	 
 
 
 
@@ -1827,9 +1822,7 @@ macro(1, "Mystic 30% ", function()
 	end
 	end)
 
-	UI.Separator()
 
-	
 
 	
 UI.Separator()
