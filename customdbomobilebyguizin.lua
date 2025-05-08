@@ -1,3 +1,187 @@
+
+  
+  local bugMapMobile = {};
+  
+  local cursorWidget = g_ui.getRootWidget():recursiveGetChildById('pointer');
+  
+  local initialPos = { x = cursorWidget:getPosition().x / cursorWidget:getWidth(), y = cursorWidget:getPosition().y / cursorWidget:getHeight() };
+  
+  local availableKeys = {
+	  ['Up'] = { 0, -6 },
+	  ['Down'] = { 0, 6 },
+	  ['Left'] = { -7, 0 },
+	  ['Right'] = { 7, 0 }
+  };
+  
+  function bugMapMobile.logic()
+	  local pos = pos();
+	  local keypadPos = { x = cursorWidget:getPosition().x / cursorWidget:getWidth(), y = cursorWidget:getPosition().y / cursorWidget:getHeight() };
+	  local diffPos = { x = initialPos.x - keypadPos.x, y = initialPos.y - keypadPos.y };
+  
+	  if (diffPos.y < 0.46 and diffPos.y > -0.46) then
+		  if (diffPos.x > 0) then
+			  pos.x = pos.x + availableKeys['Left'][1];
+		  elseif (diffPos.x < 0) then
+			  pos.x = pos.x + availableKeys['Right'][1];
+		  else return end
+	  elseif (diffPos.x < 0.46 and diffPos.x > -0.46) then
+		  if (diffPos.y > 0) then
+			  pos.y = pos.y + availableKeys['Up'][2];
+		  elseif (diffPos.y < 0) then
+			  pos.y = pos.y + availableKeys['Down'][2];
+		  else return; end
+	  end
+	  local tile = g_map.getTile(pos);
+	  if (not tile) then return; end
+  
+	  g_game.use(tile:getTopUseThing());
+  end
+  
+  testMacro = macro(1, bugMapMobile.logic); 
+  
+  test1 = addIcon("BugMap", {item = 3074, text = "BugMap"}, testMacro )
+  test1:breakAnchors()
+  test1:move(10, 100) 
+  
+  local isStacking = false;
+  local stackMonster = nil;
+  local current_vocation;
+  
+  local g_mouse = modules.corelib.g_mouse;
+  local g_keyboard = modules.corelib.g_keyboard;
+  
+  local stackSpells = {
+	  {
+		  name = "Shunkanido",
+		  distance = 8
+	  },
+	  {
+		  name = "Teleport",
+		  distance = 4
+	  }
+  };
+  
+  local availableKeys = {
+	  ['Up'] = { 0, -6 },
+	  ['Down'] = { 0, 6 },
+	  ['Left'] = { -7, 0 },
+	  ['Right'] = { 7, 0 }
+  };
+  
+  local directions = {
+	  ["Up"] = "n",
+	  ["Down"] = "s",
+	  ["Left"] = "w",
+	  ["Right"] = "e"
+  };
+  
+  local stackData = {
+	  ["n"] = function(playerPos, creaturePos) return playerPos.y > creaturePos.y; end,
+	  ["s"] = function(playerPos, creaturePos) return playerPos.y < creaturePos.y; end,
+	  ["w"] = function(playerPos, creaturePos) return playerPos.x > creaturePos.x; end,
+	  ["e"] = function(playerPos, creaturePos) return playerPos.x < creaturePos.x; end
+  };
+  
+  local sortData = {
+	  ["n"] = function(a, b) return a.position.y < b.position.y; end,
+	  ["s"] = function(a, b) return a.position.y > b.position.y; end,
+	  ["w"] = function(a, b) return a.position.x < b.position.x; end,
+	  ["e"] = function(a, b) return a.position.x > b.position.x; end
+  };
+  
+  local doFilter = function(data, dir)
+	  local i = 1;
+	  local canStack = stackData[dir];
+	  local playerPos = player:getPosition();
+	  while true do
+		  local currentValue = data[i];
+		  if (currentValue == nil) then
+			  break;
+		  end
+  
+		  if (not canStack(playerPos, currentValue.position)) then
+			  table.remove(data, i);
+			  i = 0;
+		  end
+		  i = i + 1;
+	  end
+  end
+  
+  local function setStacking(value)
+	  isStacking = value;
+	  if (keepTarget ~= nil) then
+		  keepTarget.isStacking = value;
+	  end
+  
+	  if (value == true and tyrBot) then
+		  tyrBot.comboDelay = now + 500;
+	  end
+  
+	  if (value == false and stackMonster ~= nil and stackMonster == g_game.getAttackingCreature()) then
+		  stackMonster = nil;
+		  g_game.cancelAttack();
+	  end
+  end
+  
+  function Stack()
+	  local playerPos = player:getPosition();
+	  local creatures = {};
+	  local spectators = getSpectators(playerPos.z);
+  
+	  -- Adicionando monstros à lista de criaturas
+	  for _, creature in ipairs(spectators) do
+		  if (creature:isMonster()) then
+			  local creaturePos = creature:getPosition();
+			  if (creaturePos ~= nil and getDistanceBetween(playerPos, creaturePos) >= 1) then
+				  local data = {
+					  creature = creature,
+					  position = creaturePos
+				  };
+				  table.insert(creatures, data);
+			  end
+		  end
+	  end
+  
+	  -- Ordena as criaturas pela distância em relação ao jogador
+	  table.sort(creatures, function(a, b) return getDistanceBetween(playerPos, a.position) < getDistanceBetween(playerPos, b.position); end);
+  
+	  -- Se não houver monstros, sai da função
+	  local closestMonster = creatures[1];
+	  if (closestMonster == nil) then
+		  return false;
+	  end
+  
+	  -- Ataca o monstro mais próximo
+	  setStacking(true);
+	  stackMonster = closestMonster.creature;
+  
+	  if (g_game.getAttackingCreature() ~= closestMonster.creature) then
+		  g_game.attack(closestMonster.creature);
+	  end
+  
+	  -- Verifica a distância para decidir qual magia usar
+	  local distance = getDistanceBetween(playerPos, closestMonster.position);
+	  
+	  -- Usa Shunkanido no último monstro com distância de 8 e Teleport no monstro mais próximo com distância de 4
+	  if (distance > 7) then
+		  say("Shunkanido");
+	  else
+		  say("Teleport");
+	  end
+  
+	  return true;
+  end
+  
+  macro(1, function()
+	  if (g_keyboard.isKeyPressed("F2")) then
+		  if (Stack()) then return; end
+	  end
+	  setStacking(false);
+  end)
+  
+  
+
+
 local lastRegeneration;
 macro(1, function()
     if (player:getLevel() < 10) then return; end
