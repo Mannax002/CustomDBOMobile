@@ -1,111 +1,109 @@
--- Lista de cidades
-local cities = {
-	'Earth',       -- FREE
-	'M2',
-	'Tsufur',
-	'Zelta',
-	'Vegeta',
-	'Namek',
-	'Gardia',
-	'Lude',
-	'Premia',
-	'City 17',
-	'Ruudese',
-	'Kanassa',
-	'Gelbo',
-	'Tritek',
-	'Rygol',
-	'CC21',        -- FREE
-	'Yardratto'
-  }
+
   
-  -- Nome do NPC
-  local npcName = 'Gate Keaper'
+  xtela, ytela = 300, 200
+
+  local widget = setupUI([[
+  Panel
+	height: 400
+	width: 900
+  ]], modules.game_interface.getMapPanel())
   
-  -- Variáveis de controle
-  local lastTravel = 0
-  local travelDelay = 3000 -- 3 segundos
   
-  -- Cria a interface
-  travelUI = setupUI([[  
-  UIWindow
-	!text: tr('viajar')
-	color: #99d6ff
-	font: sans-bold-16px
-	size: 100 100
-	background-color: black
-	opacity: 0.85
-	anchors.left: parent.left
-	anchors.top: parent.top
-	margin-left: 600
-	margin-top: 150
+  local TempoPK = 15 -- tempo em minutos
   
-	ComboBox
-	  id: travelOptions
-	  anchors.horizontalCenter: parent.horizontalCenter
-	  anchors.top: parent.top
-	  text-align: center
-	  opacity: 1.0
-	  color: yellow
-	  font: sans-bold-16px
-	  margin-top: 25
-	  @onSetup: |
-		self:addOption("None")
-  
-	Button
-	  id: closeButton
-	  text: X
-	  anchors.right: parent.right
-	  anchors.bottom: parent.bottom
-	  color: #99d6ff
-	  size: 15 15
-	  margin-bottom: 10
-	  margin-right: 10
-  ]], g_ui.getRootWidget())
-  
-  travelUI:hide()
-  
-  -- Adiciona as cidades ao combo
-  for _, city in ipairs(cities) do
-	travelUI.travelOptions:addOption(city)
+  if type(storage.att) ~= 'table' or storage.id ~= player:getId() then
+  storage.TimeRemain = 0
+  storage.att = {}
+  storage.id = player:getId()
   end
   
-  -- Fecha a janela ao clicar no X
-  travelUI.closeButton.onClick = function()
-	travelUI:hide()
+  onTextMessage(function(mode, text)
+  
+  o = text:lower()
+  
+  if o:find('was not justified') then
+  storage.TimeRemain = now + (TempoPK * 60 * 1000)
+  end
+  if not o:find('due to your') and not o:lower():find('you deal') then return end
+  for _, x in ipairs(getSpectators(posz())) do
+  if x:isPlayer() and text:find(x:getName()) then
+  for v, u in pairs(storage.att) do
+  
+  if x:getName() == u.nk then
+  table.remove(storage.att, v)
   end
   
-  -- Envia mensagem ao NPC
-  NPC.talk = function(text)
-	if g_game.getClientVersion() >= 810 then
-	  g_game.talkChannel(11, 0, text)
-	else
-	  return say(text)
-	end
   end
   
-  -- Mostra a UI se o NPC estiver por perto
-  macro(100, function()
-	local findNpc = getCreatureByName(npcName)
-	if findNpc and getDistanceBetween(pos(), findNpc:getPosition()) <= 2 then
-	travelUI:show()
-	else
-	travelUI:hide()
-	end
+  table.insert(storage.att, {nk = x:getName(), t = now + 60000, i = x:getId()})
+  
+  end
+  end
+  
   end)
   
-  travelUI.travelOptions.onOptionChange = function(widget, option, data)
-	say('hi')
-	schedule(800, function()
-	NPC.talk(option)
-	end)
-	schedule(1600, function()
-	NPC.talk('yes')
-	end)
+  local function doFormatMin(v)
+  
+  if v < 1000 then
+  return '00:00'
   end
   
+  v = v/1000
+  local mins = 00
+  local seconds = 00
   
- 
+  if v >= 60 then
+  mins = string.format("%02.f", math.floor(v / 60))
+  end
+  
+  seconds = string.format("%02.f", math.abs(math.floor(math.mod(v, 60))))
+  
+  return mins .. ":" .. seconds
+  
+  end
+  
+  local timepk = g_ui.loadUIFromString([[
+  Label
+	color: white
+	opacity: 0.85
+	text-horizontal-auto-resize: true
+  ]], widget)
+  
+  macro(1, function()
+  
+  for c, q in ipairs(storage.att) do
+  for _, x in ipairs(getSpectators(true)) do
+  if x:isPlayer() and q.nk == x:getName() then
+  
+  if x:getHealthPercent() == 0 then
+  storage.TimeRemain = now + (TempoPK * 60 * 1000)
+  table.remove(storage.att, c)
+  end
+  
+  end
+  
+  if q.t < now or q.t - now > 60000 or (q.nk == x:getName() and q.i ~= x:getId()) then
+  table.remove(storage.att, c)
+  end
+  
+  end
+  end
+  
+  timepk:setPosition({y = ytela-150, x =  xtela-97})
+  
+  if storage.TimeRemain < now then
+  
+  timepk:setText('PZ: 00:00')
+  timepk:setColor('green')
+  
+  else
+  
+  timepk:setText('PZ: ' ..doFormatMin(math.abs(now - storage.TimeRemain))..'')
+  timepk:setColor('red')
+  
+  end
+  
+  end)
   
   
   
