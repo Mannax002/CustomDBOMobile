@@ -1,3 +1,5 @@
+SetDefaultTab ('Tools')
+
 scriptFuncs = {};
 comboSpellsWidget = {};
 
