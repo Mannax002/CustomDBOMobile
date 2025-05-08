@@ -75,7 +75,7 @@ macro(1, function()
   timepk:setText(doFormatMin(math.abs(now - storage.TimeRemain)))
   timepk:setColor('red')
  end
-end)
+end);
 
 
 
