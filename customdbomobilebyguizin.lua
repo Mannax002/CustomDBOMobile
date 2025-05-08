@@ -78,7 +78,7 @@ macro(1, function()
 end);
 
 
-UI.Separator()
+
 
 local lastRegeneration;
 macro(1, function()
@@ -330,7 +330,6 @@ EnemyIcon = addIcon("Enemy", {item=7657, text="Enemy"}, macro(1, function()
 	end
   end))
   
-UI.Separator()
 
 
 
@@ -1452,7 +1451,7 @@ macro(1, function()
 end)
 
 
-UI.Separator()
+
 
 
 local dropItems = { 3031, 3035 }
@@ -1489,7 +1488,7 @@ end
 end
 
 
-UI.Separator()
+
 
 local moveIds = {3031, 3035, 3043, 21907};
 macro(1, "Push-Max", function()
@@ -1526,7 +1525,7 @@ if (not movePos) then return; end
 g_game.move(moveItem, movePos, moveItem:getCount());
 end).timeout = 1;
 
-UI.Separator()
+
 
 
 modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mobile-NTO/refs/heads/main/GateKeaper.lua', function(script)
@@ -1536,7 +1535,7 @@ end);
 modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mobile-NTO/refs/heads/main/Linhadotempo.lua', function(script)
 assert(loadstring(script))()
 end);
-UI.Separator()
+
 
 
 local stopPvp;
@@ -1715,10 +1714,6 @@ macro(100, function()
     end
 end);
 
-addSeparator ()
-
-setDefaultTab ('Main')
---- TARGET 
 
 doAttack = function(target)
 	if not target or not g_game.getLocalPlayer() then
@@ -1805,7 +1800,7 @@ doAttack = function(target)
 	end);
 
 
-UI.Separator()
+
 macro(1, "Mystic 30% ", function()
 	if hppercent() <= 30 then
 	  say 'mystic defense'
@@ -1815,7 +1810,7 @@ macro(1, "Mystic 30% ", function()
 
 
 	
-UI.Separator()
+
 
 setDefaultTab ('Tools')
 
@@ -1844,7 +1839,7 @@ macro(3000, "Buffz All", function()
 	end
 end)
 
-UI.Separator()
+
 
 macro(500, "", nil, function()
 	if not hasHaste() then
@@ -1898,7 +1893,7 @@ macro(100, function()
 			
 			end)
 
-UI.Separator()
+
 	
 
 local healthId = 3062
@@ -1909,11 +1904,11 @@ usewith(healthId, player)
 end
 end)
 
-UI.Separator()
 
 
 
-UI.Separator()
+
+
 
 
 
@@ -2402,12 +2397,12 @@ end)
 
 
 
-UI.Separator()
+
 	 Panels.AttackLeaderTarget(batTab)
 	 addSeparator("sep", batTab)
-	 UI.Separator()
+	 
 
-	 UI.Separator()		 
+	 		 
 
    
 
