@@ -1,25 +1,26 @@
 -- adicione as cidades aqui
 local cities = {
-  'Earth',
+  'Earth',       -- FREE
   'M2',
   'Tsufur',
-  'Namek',
   'Zelta',
   'Vegeta',
+  'Namek',
+  'Gardia',
+  'Lude',
   'Premia',
   'City 17',
-  'Gardia',
-  'Rygol',
   'Ruudese',
   'Kanassa',
   'Gelbo',
   'Tritek',
-  'Yardratto',
-  'CC21'
+  'Rygol',
+  'CC21',        -- FREE
+  'Yardratto'
 }
+
 -- adicione o nome do npc
 local npcName = 'Gate Keaper';
-
 
 -- não edita nada abaixo disso
 travelUI = setupUI([[
@@ -57,11 +58,9 @@ UIWindow
     size: 15 15
     margin-bottom: 10
     margin-right: 10
+]], g_ui.getRootWidget())
 
-
-    
-]], g_ui.getRootWidget());
-travelUI:hide();
+travelUI:hide()
 
 for _, city in ipairs(cities) do
   travelUI.travelOptions:addOption(city)
@@ -69,30 +68,56 @@ end
 
 NPC.talk = function(text)
   if g_game.getClientVersion() >= 810 then
-      g_game.talkChannel(11, 0, text)
+    g_game.talkChannel(11, 0, text)
   else
-      return say(text)
+    return say(text)
   end
 end
 
 macro(100, function()
   local findNpc = getCreatureByName(npcName)
   if findNpc and getDistanceBetween(pos(), findNpc:getPosition()) <= 2 then
-      travelUI:show();
+    travelUI:show()
   else
-      travelUI:hide();
+    travelUI:hide()
   end
 end)
 
 travelUI.travelOptions.onOptionChange = function(widget, option, data)
   say('hi')
   schedule(100, function()
-      NPC.talk(option)
+    NPC.talk(option)
   end)
   schedule(300, function()
-      NPC.talk('yes')
+    NPC.talk('yes')
   end)
 end
+
+
+
+-- controle para evitar spam
+local lastTravel = 0
+local travelDelay = 3000 -- 3 segundos
+
+travelUI.travelOptions.onOptionChange = function(widget, option, data)
+  local now = now or g_clock.millis()
+
+  -- Ignora se a última viagem foi há menos de 3 segundos
+  if now - lastTravel < travelDelay then
+    return
+  end
+
+  lastTravel = now
+  say('hi')
+  schedule(200, function()
+    NPC.talk(option)
+  end)
+  schedule(600, function()
+    NPC.talk('yes')
+  end)
+end
+
+
 
 setDefaultTab ('Tools')
 
