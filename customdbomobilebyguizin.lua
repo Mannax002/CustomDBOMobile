@@ -1,4 +1,3 @@
-
 local lastRegeneration;
 macro(1, function()
     if (player:getLevel() < 10) then return; end
@@ -945,7 +944,7 @@ modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mob
           
           local terceiro_foco = {'IgorKarkaroff', 'JaoTIpoPIRANHA'}
           
-          local quarto_foco = {'HAFIKI', 'GLEISSAOTANKDEGUERRA', '	HASHIRAMAcarniceiro'}
+          local quarto_foco = {'HAFIKI', 'GLEISSAOTANKDEGUERRA', '  HASHIRAMAcarniceiro'}
           
           macro(100, "Enemy All", function()
           
@@ -1132,5 +1131,5 @@ modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mob
         end));
         
         -- Mover o ícone para a direita
-        FollowAttack.Icon:move(10, 100)  -- Move o ícone 10 pixels para a direita e 100 pixels para baixo (ajuste conforme necessário)
+        FollowAttack.Icon:move(105, 100)  -- Move o ícone 10 pixels para a direita e 100 pixels para baixo (ajuste conforme necessário)
         
