@@ -165,157 +165,6 @@ end)
 
 
 
-local bolAction = "hi";
-local blessAction = "hi";
-
-hasProtections = function()
-	if (storage.bless == player:getId()) then
-		local ringItem = getFinger();
-		if (ringItem and ringItem:getId() == 6300) then
-			return true;
-		end
-	end
-end
-
-local talk = function(msg)
-	if (msg == "hi") then
-		g_game.talkChannel(2, 0, msg); -- whisper
-		delay(1000);
-		return;
-	end
-	NPC.say(msg);
-end
-
-blessMacro = macro(1, function(self)
-	if (storage.bless == player:getId()) then
-		return self.setOff();
-	end
-	if (checkBless == nil) then
-		NPC.say("!bless");
-		return delay(300);
-	end
-	
-	local playerPos = player:getPosition();
-	for _, spec in ipairs(getSpectators(playerPos.z)) do
-		if (spec:isNpc() and spec:getName() == "Blessed Tapion") then
-			local specPos = spec:getPosition();
-			if (specPos ~= nil) then
-				local distance = getDistanceBetween(specPos, playerPos);
-				if (distance <= 1) then
-					sayBless = true;
-				elseif (distance >= 7) then
-					player:autoWalk(specPos);
-					delay(500);
-				end
-				g_game.use(spec:getTile():getTopUseThing());
-				break;
-			end
-		end
-	end
-	if (sayBless == true) then
-		talk(blessAction);
-	end
-end)
-
-bolMacro = macro(1, function(self)
-	if (blessMacro.isOn()) then
-		return;
-	end
-	if (getFinger()) then
-		modules.game_console.removeTab("NPCs");
-		NPC.closeTrade();
-		return self.setOff();
-	end
-
-	local playerPos = player:getPosition();
-	for _, spec in ipairs(getSpectators(playerPos.z)) do
-		if (spec:isNpc() and spec:getName() == "Yama Helper") then
-			local specPos = spec:getPosition();
-			if (specPos ~= nil) then
-				local distance = getDistanceBetween(specPos, playerPos);
-				if (distance <= 1) then
-					sayBol = true;
-				elseif (distance >= 7) then
-					player:autoWalk(specPos);
-					delay(500);
-				end
-				g_game.use(spec:getTile():getTopUseThing());
-				break;
-			end
-		end
-	end
-	
-	if (not sayBol) then
-		return;
-	end
-	if (bolAction ~= true) then
-		talk(bolAction);
-		return;
-	end
-	NPC.buy(6299, 1)
-	delay(500);
-end)
-
-onTalk(function(name, level, mode, text, channelId, pos)
-	if (blessMacro.isOff() and bolMacro.isOff()) then
-		return;
-	end
-	if (mode ~= 51) then
-		return;
-	end
-    if (name ~= "Blessed Tapion" and name ~= "Yama Helper") then
-		if (bolAction == "hi" or blessAction == "hi") then
-			for i = 1, 5 do
-				schedule(i * 200, function()
-					talk("bye");
-				end)
-			end
-		end
-		return
-	end
-	if (text:find("Estou aqui para oferecer")) then
-		blessAction = "yes"
-	elseif text:find("{protegido} !") then
-		blessMacro.setOff();
-		storage.bless = player:getId();
-		modules.game_console.removeTab("NPCs");
-		talkPrivate(player:getName(), "Bless comprado!");
-	elseif text:find("Estou ajudando o Yama aqui no mund") then
-		bolAction = "trade"
-	elseif text:find("Don't you like it?") then
-		bolAction = true
-	end
-end)
-
-onTextMessage(function(mode, text)
-	if (text == "Not protected!") then
-		checkBless = true;
-	elseif (text == "Protected!") then
-		blessMacro.setOff();
-		storage.bless = player:getId();
-	end
-end)
-
-onTextMessage(function(mode, text)
-	if (text:find("pode se transformar!")) then
-		outfitTransform = player:getOutfit().type;
-	elseif (text:find("precisa estar no level")) then
-		levelTransform = tonumber(text:match("%d+"));
-	end
-end)
-
-transformMacro = macro(1, function()
-	if (levelTransform and level() < levelTransform) then
-		return;
-	end
-	if (player:getOutfit().type == outfitTransform) then
-		return;
-	end
-
-	say("!transformar");
-end)
-
-
 UI.Separator()
 
 
@@ -1142,5 +991,298 @@ macro(100, function()
     if (ClosestStair.walkTime < now and distance == 1) then
         CaveBot.walkTo(tilePos, 1, {precision=1})
         ClosestStair.walkTime = now + 1
+    end
+end)
+
+
+-- Inicializa storage
+if type(storage.cooldownTable) ~= "table" then
+    storage.cooldownTable = {}
+end
+
+local name = name()
+if storage.cooldownTable[name] == nil then
+    storage.cooldownTable[name] = {}
+end
+local cooldownTable = storage.cooldownTable[name]
+
+setCooldownTime = function(var_name, value)
+    cooldownTable[var_name] = os.time() + tonumber(value)
+end
+
+isOnCooldown = function(var_name)
+    local value = cooldownTable[var_name] or 0
+    return os.time() < value
+end
+
+-- Variáveis globais
+local isStacking = false
+local stackMonster = nil
+local current_vocation = nil
+local exhaustedTime = 0
+
+-- Spells de stack
+local stackSpells = {
+    {
+        name = "Shunkanido",
+        cooldown = 10,
+        level = 400,
+        mlevel = 150
+    },
+    {
+        name = "Teleport",
+        exhaust = 2000,
+        distance = 4
+    }
+}
+
+-- Funções auxiliares
+local function setStacking(value)
+    isStacking = value
+    if not value and stackMonster then
+        stackMonster = nil
+    end
+end
+
+local function getStackingSpell()
+    local level = player:getLevel()
+    local mlevel = player:getMagicLevel()
+    for _, data in ipairs(stackSpells) do
+        if not isOnCooldown(data.name) then
+            if (not data.mlevel or data.mlevel <= mlevel) and (not data.level or data.level <= level) then
+                return data
+            end
+        end
+    end
+end
+
+local function StackToMonster(target)
+    if not target then return false end
+    local playerPos = pos()
+    local targetPos = target:getPosition()
+
+    -- Define direção do player baseada na posição do monstro
+    local playerDir = player:getDirection() -- 0=n,1=e,2=s,3=w
+    if targetPos.y < playerPos.y then
+        if playerDir ~= 0 then turn(0) end
+    elseif targetPos.y > playerPos.y then
+        if playerDir ~= 2 then turn(2) end
+    elseif targetPos.x > playerPos.x then
+        if playerDir ~= 1 then turn(1) end
+    elseif targetPos.x < playerPos.x then
+        if playerDir ~= 3 then turn(3) end
+    end
+
+    local stackingSpell = getStackingSpell()
+    if not stackingSpell then return false end
+
+    local distance = getDistanceBetween(playerPos, targetPos)
+    setStacking(true)
+    stackMonster = target
+
+    if g_game.getAttackingCreature() ~= target then
+        g_game.attack(target)
+    end
+
+    if distance > 4 then
+        say(stackingSpell.name)
+        setCooldownTime(stackingSpell.name, stackingSpell.cooldown or 0)
+    else
+        say("Teleport")
+    end
+    return true
+end
+
+-- Macro Mobile F2
+macro(50, function()
+    if not modules.corelib.g_keyboard.isKeyPressed("F2") then return end
+
+    local playerPos = pos()
+    local spectators = getSpectators(playerPos.z)
+    local closest = nil
+    local minDist = 100
+
+    for _, c in ipairs(spectators) do
+        if c:isMonster() or c:getEmblem() == 1 then
+            local cPos = c:getPosition()
+            local d = getDistanceBetween(playerPos, cPos)
+            if d < minDist then
+                minDist = d
+                closest = c
+            end
+        end
+    end
+
+    StackToMonster(closest)
+end)
+
+-- Atualiza vocação do player
+onTextMessage(function(mode, text)
+    if text:starts("You see yourself.") then
+        text = text:split(" ")
+        local vocation = {}
+        local start_found = false
+        for index = 1, table.size(text) do
+            local word = text[index]
+            if start_found then
+                if word == "and" then break end
+                table.insert(vocation, word)
+                if word:find("%.") then
+                    vocation[#vocation] = word:sub(1, -2)
+                    break
+                end
+            elseif word == "are" then
+                start_found = true
+            end
+        end
+        vocation = table.concat(vocation, " ")
+        current_vocation = vocation
+    end
+end)
+
+-- Adiciona spells extras por vocação
+macro(1, function(self)
+    if not current_vocation then return end
+    if current_vocation == "Paikuhan" then
+        table.insert(stackSpells, 1, {
+            name="Blazing Zephyr",
+            cooldown=2,
+            mlevel=140,
+            level=400
+        })
+    elseif current_vocation == "Hitto" then
+        table.insert(stackSpells, 1, {
+            name="Time Skip Vital Point Attack",
+            cooldown=7,
+            mlevel=100,
+            level=200
+        })
+    end
+    self:setOff()
+end)
+
+
+
+-- STORAGE AUTOMÁTICO DE MAGIAS POR VOCAÇÃO
+assert(type(table.insert) == "function", "table.insert foi sobrescrito!")
+local name = name()
+local storage = global_storage or storage
+
+if type(storage.autoSpells) ~= "table" then
+    storage.autoSpells = {}
+end
+
+local vocation = nil
+local spells = nil
+
+-- Lista padrão de magias por vocação (pode editar)
+local defaultSpells = {
+    ["goku"] = {buffSpell = "Ultimate Power Up"},
+    ["pan"] = {buffSpell = "Ultimate Power Up"},
+    ["son"] = {buffSpell = "Ultimate Power Up"},
+    ["gogeta"] = {buffSpell = "fusion power"},
+    ["vegeto"] = {buffSpell = "fusion power"},
+    ["paikuhan"] = {buffSpell = "Ultimate Power Up"},
+    ["jiren"] = {buffSpell = "Justice Aura"},
+    ["hitto"] = {buffSpell = "Ultimate Power Up"},
+    ["android"] = {buffSpell = "Body manipulation"},
+    ["android 21"] = {buffSpell = "Body manipulation"},
+    ["bills"] = {buffSpell = "Ultimate Power Up"},
+    ["kefla"] = {buffSpell = "Ultimate fusion energy"},
+    ["vegeta"] = {buffSpell = "Ultimate Power Up"},
+    ["picolo"] = {buffSpell = "Ultimate Power Up"},
+    ["c17"] = {buffSpell = "Ultimate Power Up"},
+    ["gohan"] = {buffSpell = "Ultimate Power Up"},
+    ["trunks"] = {buffSpell = "Ultimate Power Up"},
+    ["cell"] = {buffSpell = "Ultimate Power Up"},
+    ["cooler"] = {buffSpell = "Ultimate Power Up"},
+    ["freeza"] = {buffSpell = "Ultimate Power Up"},
+    ["majin buu"] = {buffSpell = "Ultimate Power Up"},
+    ["c18"] = {buffSpell = "Ultimate Power Up"},
+    ["uub"] = {buffSpell = "Ultimate Power Up"},
+    ["goten"] = {buffSpell = "Ultimate Power Up"},
+    ["chibi trunks"] = {buffSpell = "Ultimate Power Up"},
+    ["dende"] = {buffSpell = "Ultimate Power Up"},
+    ["tsuful"] = {buffSpell = "Ultimate Power Up"},
+    ["bardock"] = {buffSpell = "Ultimate Power Up"},
+    ["kuririn"] = {buffSpell = "Ultimate Power Up"},
+    ["kaio"] = {buffSpell = "Ultimate Power Up"},
+    ["janemba"] = {buffSpell = "Ultimate Power Up"},
+    ["turles"] = {buffSpell = "Ultimate Power Up"},
+    ["bulma"] = {buffSpell = "Ultimate Power Up"},
+    ["shenron"] = {buffSpell = "Ultimate Power Up"},
+    ["tapion"] = {buffSpell = "Ultimate Power Up"},
+    ["kame"] = {buffSpell = "Ultimate Power Up"},
+    ["king vegeta"] = {buffSpell = "Ultimate Power Up"},
+    ["king"] = {buffSpell = "Ultimate Power Up"},
+    ["zaiko"] = {buffSpell = "Ultimate Power Up"},
+    ["chilled"] = {buffSpell = "Ultimate Power Up"},
+    ["goku black"] = {buffSpell = "Ultimate Power Up"},
+    ["kagome"] = {buffSpell = "kinzoku no kawa"},
+    ["c16"] = {buffSpell = "Ultimate Power Up"},
+    ["toppo"] = {buffSpell = "hakaishin aura"},
+    ["broly super"] = {buffSpell = "Ultimate Power Up"},
+    ["broly"] = {buffSpell = "Ultimate Power Up"},
+    ["tenshinhan"] = {buffSpell = "Ultimate Power Up"},
+    ["yamcha"] = {buffSpell = "Ultimate Power Up"},
+    ["raditz"] = {buffSpell = "Ultimate Power Up"},
+    ["jenk"] = {buffSpell = "Ultimate Power Up"}
+}
+
+-- Detecta vocação automaticamente ao olhar para o player
+macro(2000, function()
+    if vocation == nil then
+        if player:getTile():getTopThing() == player then
+            g_game.look(player)
+        end
+    end
+end)
+
+onTextMessage(function(mode, text)
+    if mode ~= 20 then return end
+    if not text:starts("You see yourself.") then return end
+    
+    -- Extrair vocação do texto
+    local vocation = nil
+    local text_lower = text:lower()
+    local start_pos = text_lower:find("you are ")
+    if start_pos then
+        local after = text:sub(start_pos + 8)
+        local end_pos = #after + 1
+        local patterns = {"%.", " member", " and", " leader", " of", " "}
+        for _, p in ipairs(patterns) do
+            local i = after:lower():find(p)
+            if i and i < end_pos then
+                end_pos = i
+            end
+        end
+        vocation = after:sub(1, end_pos - 1):gsub("%.", ""):lower():gsub("^%s*(.-)%s*$", "%1")
+    end
+
+    -- Salva ou carrega spells
+    if storage.autoSpells[vocation] == nil then
+        storage.autoSpells[vocation] = defaultSpells[vocation] or {buffSpell=""}
+    end
+
+    spells = storage.autoSpells[vocation]
+end)
+
+-- MACRO PARA BUFF AUTOMÁTICO
+macro(1000, function()
+    if not spells then return end
+    local time = storage.buffTime or 0
+    if time < os.time() and spells.buffSpell ~= "" then
+        say(spells.buffSpell)
+    end
+end)
+
+-- Atualiza buffTime quando o buff é falado
+onTalk(function(name, level, mode, text)
+    if name ~= player:getName() then return end
+    if not spells then return end
+    if spells.buffSpell == "" then return end
+    
+    if text:trim():lower() == spells.buffSpell:trim():lower() then
+        storage.buffTime = os.time() + 60
     end
 end)
