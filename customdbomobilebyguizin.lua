@@ -2788,7 +2788,7 @@ onPlayerPositionChange(function(newPos, oldPos)
             if newPos.x == izanagiPos.x and newPos.y == izanagiPos.y and newPos.z == izanagiPos.z then
                 value.activeCooldown = nil;
                 value.alreadyChecked = true;
-            end
+            end)
 
 
 
