@@ -1,24 +1,3 @@
-
-  local name = name();
-if (type(storage.cooldownTable) ~= "table") then
-	storage.cooldownTable = {};
-end
-if (storage.cooldownTable[name] == nil) then
-	storage.cooldownTable[name] = {};
-end
-cooldownTable = storage.cooldownTable[name];
-
-
-setCooldownTime = function(var_name, value)
-	cooldownTable[var_name] = (os.time() + tonumber(value));
-end
-
-isOnCooldown = function(var_name)
-	local value = (cooldownTable[var_name] or 0);
-	return os.time() < value;
-end
-  
-  
   local isStacking = false;
   local stackMonster = nil;
   local current_vocation;
