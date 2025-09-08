@@ -2793,531 +2793,195 @@ onPlayerPositionChange(function(newPos, oldPos)
 
 
 
--- local ultimateOT = g_game.getWorldName() == "NtoUltimate";
+-- BugMap Mobile (corrigido, sem ícone)
+if not modules._G.g_app.isMobile() then return end
 
-local pressed_data = {};
+local bugMapMobile = {}
+bugMapMobile.pointer = nil
+bugMapMobile.initialPos = nil
+bugMapMobile.setupAttempts = 0
 
-onKeyDown(function(key)
-	pressed_data[key] = now;
-end)
-
-onKeyUp(function(key)
-	pressed_data[key] = nil;
-end)
-
-local isKeyHold = function(key)
-	if (not modules.corelib.g_keyboard.isKeyPressed(key)) then
-		pressed_data[key] = nil;
-	end
-	
-	local time = pressed_data[key];
-
-	if (time and now - time >= 100) then
-		return true;
-	end
-	
-	return false;
-end
-
-
-excludeIds = excludeIds or {
-    12099,
-    17393
-};
-
-stairsIds = stairsIds or {
-    1666,
-    6207,
-    1948,
-    435,
-    7771,
-    5542,
-    8657,
-    6264,
-    1646,
-    1648,
-    1678,
-    5291,
-    1680,
-    6905,
-    6262,
-    1664,
-    13296,
-    1067,
-    13861,
-    11931,
-    1949,
-    6896,
-    6205,
-    13926,
-    1947,
-    12097,
-	615,
-	1678, -- DOOR
-	8367, -- DOOR
-};
-
-local isMobile = modules._G.g_app.isMobile();
-
-local bugMap = {};
--- if (SUB_ZERO) then
-if (not g_game.getWorldName():lower():find("db")) then
-	bugMap.icon = addIcon("bugMapKunai", {text="Dash Sunshin", item={id=storage.kunaiId or 7382}}, function(icon, isOn)
-		bugMap.status = isOn;
-	end)
-end
-
-
-
-TILE_METHODS = modules._G.Tile_mt.methods;
-
-TILE_METHODS.clearText = function(self, delay)
-	delay = delay or 0;
-	local clearTime = now + delay;
-	self.clearTime = clearTime;
-	schedule(delay, function()
-		if (self.clearTime ~= clearTime) then return; end
-		self:setText("");
-	end)
-end
-
-TILE_METHODS.isStair = function(self, ignoreCreatures)
-    local tilePos = self:getPosition();
-    if (not tilePos) then return; end
-	
-	-- if (not self:isWalkable(ignoreCreatures)) then return; end
-	
-	local tileItems = self:getItems();
-	
-    for _, item in ipairs(tileItems) do
-		local itemId = item:getId();
-        if (excludeIds[itemId]) then return; end
-    end
-
-	for _, item in ipairs(tileItems) do
-		local itemId = item:getId();
-        if (stairsIds[itemId]) then return true; end
-    end
-
-    local color = g_map.getMinimapColor(tilePos);
-	return color >= 210 and color <= 213 and not self:isPathable() and self:isWalkable(ignoreCreatures);	
-end
-
-
-
-bugMap.correctDirection = function()
-	local dir = player:getDirection();
-	return dir <= 3 and dir or dir < 6 and 1 or 3;
-end
-
-bugMap.nextPosition = {
-    {x = 0, y = -1},
-    {x = 1, y = 0},
-    {x = 0, y = 1},
-    {x = -1, y = 0},
-    {x = 1, y = -1},
-    {x = 1, y = 1},
-    {x = -1, y = 1},
-    {x = -1, y = -1}
+local availableKeys = {
+    ['Up']    = { 0, -6 },
+    ['Down']  = { 0,  6 },
+    ['Left']  = { -7, 0 },
+    ['Right'] = { 7,  0 }
 }
 
-bugMap.getNextDirection = function(pos, dir)
-	local offSet = bugMap.nextPosition[dir + 1];
-	
-	pos.x = pos.x + offSet.x;
-	pos.y = pos.y + offSet.y;
-	
-	return pos;
+local function safeCall(fn, ...)
+    local ok, res = pcall(fn, ...)
+    if not ok then return nil end
+    return res
 end
 
-bugMap.positions = {
-	[0] = {x = 0, y = -5},
-	[1] = {x = 5, y = 0},
-	[2] = {x = 0, y = 5},
-	[3] = {x = -5, y = 0}
-}
+local function setupPointer()
+    local root = g_ui.getRootWidget()
+    if not root then return false end
 
-bugMap.getIteration = function(dir)
-	local base = bugMap.positions[dir];
-	
-	local val = {};
-	
-	local x, y = base.x, base.y;
-	val.x = {startIter = x < 0 and x or 0, endIter = x > 0 and x or 0};
-	val.y =	{startIter = y < 0 and y or 0, endIter = y > 0 and y or 0};
-	
-	
-	return val.x, val.y;
-end
-	
-bugMap.getDistance = function(p1, p2)
-
-    local distx = math.abs(p1.x - p2.x);
-    local disty = math.abs(p1.y - p2.y);
-
-    return math.sqrt(distx * distx + disty * disty);
-end
-
-function bugMap:forceWalking()
-	local walkPos = self.walkingPos;
-	
-	local tile = g_map.getTile(walkPos);
-	if (not tile) then return; end
-	
-	local topThing = tile:getTopThing();
-	if (not topThing) then return; end
-	
-	local playerPos = player:getPosition();
-	if (playerPos.z ~= walkPos.z) then return; end
-	
-	local path = findPath(playerPos, walkPos);
-	if (not path) then return; end
-	
-	tile:setText("!", "green");
-	tile:clearText(200);
-
-	player:lockWalk(100);
-	if (player:isAutoWalking()) then
-		player:stopAutoWalk();
-		g_game.stop();
-	end
-	
-	g_game.use(topThing);
-	player:autoWalk(walkPos);
-	delay(100);
-	
-	-- if (autoWalk(walkPos, 1)) then
-		-- delay(300);
-		-- return false;
-	-- end
-	
-	
-	
-	-- for index, value in ipairs(path) do
-		-- if (index > 5) then break; end
-		-- playerPos = bugMap.getNextDirection(playerPos, value);
-	-- end
-	-- local tile = g_map.getTile(playerPos);
-	-- if (tile) then
-		-- local topThing = (tile:getTopUseThing() or tile:getTopThing());
-		-- if (topThing) then
-			-- g_game.use(topThing);
-		-- end
-	-- end
-	return true;
-end
-
-bugMap.verifyTiles = function(dir)
-	if (FREE_VERSION) then return; end
-	if (bugMap.correctDirection() ~= dir) then
-		g_game.turn(dir);
-	end
-	local x, y = bugMap.getIteration(dir);
-
-	local nearest = {};
-	local playerPos = pos();
-	local playerTile = player:getTile();
-	for x = x.startIter, x.endIter do
-		for y = y.startIter, y.endIter do
-			local newPos = {x = playerPos.x + x, y = playerPos.y + y, z = playerPos.z};
-			local tile = g_map.getTile(newPos);
-			if (tile and tile ~= playerTile) then
-				local distance = bugMap.getDistance(newPos, playerPos);
-				if (not nearest.distance or distance < nearest.distance) then
-					if (tile:isStair()) then
-						nearest.pos = newPos;
-						nearest.isWalkable = true;
-						nearest.distance = distance;
-					elseif 	(
-								not tile:isWalkable() --and findPath(playerPos, newPos, 15, {precision=1})
-							) 
-					then
-						nearest.pos = nil;
-						nearest.isWalkable = false;
-						nearest.distance = distance;
-					end
-				end
-			end
-		end
-	end
-	
-	-- if (nearest.pos and storage.focusStair) then
-		-- bugMap.walkingPos = nearest.pos;
-		-- return true;
-	-- end
-	
-	return nearest.isWalkable;
-end
-
-
-bugMap.handleUse = function(x, y, dir)
-
-	if (x == 0 or y == 0) then
-		if (bugMap.verifyTiles(dir)) then 
-			return; 
-		end
-	elseif (x ~= 0 and y ~= 0) then
-		x = x > 0 and 4 or -4;
-		y = y > 0 and 4 or -4;
-	end
-
-	local playerPos = player:getPosition();
-	
-	
-	if (storage.checkBoxs and storage.checkBoxs.useKunai and storage.kunaiId and not isInPz() and bugMap.status) then
-		local newX = x;
-		local newY = y;
-		local newDistance = storage.scrollBars and storage.scrollBars.distanceKunai or 6;
-		if (x == 0 and y ~= 0) then
-			newY = newDistance * (y < 0 and -1 or 1);
-		elseif (y == 0 and x ~= 0) then
-			newX = newDistance * (x < 0 and -1 or 1);
-		end
-		playerPos.x = playerPos.x + newX;
-		playerPos.y = playerPos.y + newY;
-		local tile = g_map.getTile(playerPos);
-		if (tile) then
-			local topThing = tile:getTopUseThing();
-			if (topThing and tile:isWalkable(true) and tile:isPathable() and tile:canShoot(newDistance)) then
-				g_game.stop();
-				useWith(storage.kunaiId or 7382, topThing);
-			end
-		end
-	end
-	playerPos = player:getPosition();
-	playerPos.x = playerPos.x + x;
-	playerPos.y = playerPos.y + y;
-	
-	local tile = g_map.getTile(playerPos);
-	if (not tile) then return; end
-	
-	local topThing = tile:getTopUseThing();
-	if (not topThing) then return; end
-	
-	-- local distance = getDistanceBetween(playerPos, player:getPosition());
-	-- if (distance <= 1) then return; end
-	-- tile:setText("USING");
-	-- TILE = tile;
-	-- schedule(500, function()
-		-- if (TILE ~= tile) then
-			-- tile:setText(" ");
-		-- end
-	-- end)
-	-- if (ultimateOT) then
-		-- player:lockWalk(100);
-	-- end
-	if (topThing:isMultiUse()) then
-		return useWith(topThing, player);
-	end
-	g_game.use(topThing);
-end
-
-
-bugMap.basis = {
-	["W"] = {
-		dir = 0,
-		sum = {x = 0, y = -6}
-	},
-
-	["A"] = {
-		dir = 3,
-		sum = {x = -6, y = 0}
-	},
-
-	["S"] = {
-		dir = 2,
-		sum = {x = 0, y = 6}
-	},
-
-	["D"] = {
-		dir = 1,
-		sum = {x = 6, y = 0}
-	},
-	-- ["Q"] = {
-		-- dir = 3,
-		-- sum = {x = -3, y = -3}
-	-- },
-	-- ["E"] = {
-		-- dir = 1,
-		-- sum = {x = 3, y = -3}
-	-- },
-	-- ["C"] = {
-		-- dir = 1,
-		-- sum = {x = 3, y = 3}
-	-- },
-	-- ["Z"] = {
-		-- dir = 3,
-		-- sum = {x = -3, y = 3}
-	-- }
-};
-
--- tyrBot.bugMap_basis = bugMap.basis;
-
-local keyXarrow = {
-	["W"] = {"Up", "Numpad8"},
-	["A"] = {"Left", "Numpad4"},
-	["S"] = {"Down", "Numpad2"},
-	["D"] = {"Right", "Numpad6"},
-	-- ["Q"] = true,
-	-- ["E"] = true,
-	-- ["Z"] = true,
-	-- ["C"] = true
-};
-
-
-for key, data in pairs(keyXarrow) do
-	if (type(data) == "table") then
-		for _, arrow in ipairs(data) do
-			bugMap.basis[arrow] = table.copy(bugMap.basis[key]);
-		end
-	end
-	
-	if (data ~= true or ultimateOT) then
-		bugMap.basis[key].wsadWalking = true;
-	end
-end
-
-local temp = {};
-for key, value in pairs(bugMap.basis) do
-	local obj = {key=key,dir=value.dir,sum=value.sum,wsadWalking=value.wsadWalking};
-	table.insert(temp, obj);
-end
-
-table.sort(temp, function(a, b)
-	return a.key > b.key;
-end)
-
-bugMap.basis = temp;
-temp = nil;
-
-if (isMobile) then
-	local keypad = g_ui.getRootWidget():recursiveGetChildById("keypad");
-	bugMap.pointer = keypad.pointer;
-
-	local North = {
-		highest = {x = -16, y = 29},
-		lowest = {x = -75, y = -30},
-		info = {
-			dir = 0,
-			sum = {x = 0, y = -5}
-		};
-	};
-	local East = {
-		highest = {x = 29, y = 75},
-		lowest = {x = -30, y = 15},
-		info = {
-			dir = 1,
-			sum = {x = 5, y = 0}
-		};
-	};
-	local South = {
-		highest = {x = 75, y = 29},
-		lowest = {x = 16, y = -30},
-		info = {
-			dir = 2,
-			sum = {x = 0, y = 5}
-		};
-	};
-	local West = {
-		highest = {x = 29, y = -15},
-		lowest = {x = -30, y = -75},
-		info = {
-			dir = 3,
-			sum = {x = -5, y = 0}
-		};
-	};
-	local SouthWest = {
-		highest = {x = 69, y = -28},
-		lowest = {x = 28, y = -69},
-		info = {
-			sum = {x = -3, y = 3}
-		};
-	};
-	local NorthWest = {
-		highest = {x = -28, y = -29},
-		lowest = {x = -69, y = -69},
-		info = {
-			sum = {x = -3, y = -3}
-		};
-	};
-	local SouthEast = {
-		highest = {x = 70, y = 70},
-		lowest = {x = 30, y = 30},
-		info = {
-			sum = {x = 3, y = 3}
-		};
-	};
-	local NorthEast = {
-		highest = {x = -29, y = 68},
-		lowest = {x = -69, y = 29},
-		info = {
-			sum = {x = 3, y = -3}
-		};
-	};
-	DIRS = {North, East, South, West, NorthEast, SouthEast, SouthWest, NorthWest};
-end
-
-bugMap.getPressedKeys = function()
-	local pressedKeys = {};
-	local wsadWalking = modules.game_walking.wsadWalking;
-	
-	if (isMobile) then
-		local marginTop, marginLeft = bugMap.pointer:getMarginTop(), bugMap.pointer:getMarginLeft();
-		for index, value in ipairs(DIRS) do
-			if (
-				(marginTop >= value.lowest.x and marginTop <= value.highest.x) and
-				(marginLeft >= value.lowest.y and marginLeft <= value.highest.y)
-			) then
-				table.insert(pressedKeys, value.info);
-			end
-		end
-	else
-		for _, value in ipairs(bugMap.basis) do
-			if (isKeyHold(value.key)) then
-				if (
-					(value.wsadWalking and wsadWalking) or
-					(not value.wsadWalking and not wsadWalking)
-				) then
-					table.insert(pressedKeys, value);
-				end
-			end
-		end
-	end
-	return pressedKeys;
-end
-
-local rootPanel = g_ui.getRootWidget():recursiveGetChildById('gameRootPanel');
-
-g_keyboard = modules.corelib.g_keyboard;
-
-bugMap.macro = macro(1, 'Bug Map', function(self)
-	if (g_keyboard.isShiftPressed() or g_keyboard.isCtrlPressed()) then return; end
-	if (not rootPanel:isFocused()) then return; end
- 	
-	local pressedKeys = bugMap.getPressedKeys();
-	
-	if (#pressedKeys == 0) then
-		return; 
-	end
-	
-	local sumPos = {x = 0, y = 0};
-	
-	for index, value in ipairs(pressedKeys) do
-		local val = value.sum;
-		if ((sumPos.x ~= 0 and val.x ~= 0) or (sumPos.y ~= 0 and val.y ~= 0)) then
-			goto continue;
-		end
-		sumPos.x = sumPos.x + val.x;
-		sumPos.y = sumPos.y + val.y;
-		if (ultimateOT) then
-			break;
-		end
-		
-		::continue::
-	end
-	
-	bugMap.handleUse(sumPos.x, sumPos.y, pressedKeys[1].dir);	
-end)
+    local pointer = root:recursiveGetChildById('pointer')
+    if not pointer then
+        for _, child in ipairs(root:getChildren()) do
+            local id = child:getId()
+            if id and id:lower():find('pointer') then
+                pointer = child
+                break
+            elseif child.pointer then
+                pointer = child.pointer
+                break
+            end
         end
     end
-end);
+    if not pointer then return false end
+
+    bugMapMobile.pointer = pointer
+    local pos = safeCall(function() return pointer:getPosition() end)
+    local w   = safeCall(function() return pointer:getWidth() end)
+    local h   = safeCall(function() return pointer:getHeight() end)
+
+    if pos and w and h and h ~= 0 then
+        bugMapMobile.initialPos = { x = pos.x / w, y = pos.y / h }
+    else
+        local mt = safeCall(function() return pointer:getMarginTop() end) or 0
+        local ml = safeCall(function() return pointer:getMarginLeft() end) or 0
+        bugMapMobile.initialPos = { x = mt, y = ml }
+    end
+    return true
+end
+
+function bugMapMobile.logic()
+    local player = g_game.getLocalPlayer()
+    if not player then return end
+    if not bugMapMobile.pointer then return end
+
+    local curPos = safeCall(function() return bugMapMobile.pointer:getPosition() end)
+    local w = safeCall(function() return bugMapMobile.pointer:getWidth() end)
+    local h = safeCall(function() return bugMapMobile.pointer:getHeight() end)
+    if not curPos or not w or not h or h == 0 then return end
+
+    local keypadPos = { x = curPos.x / w, y = curPos.y / h }
+    local diffPos = { x = bugMapMobile.initialPos.x - keypadPos.x, y = bugMapMobile.initialPos.y - keypadPos.y }
+
+    local dx, dy
+    if math.abs(diffPos.y) < 0.46 then
+        if diffPos.x > 0 then
+            dx, dy = availableKeys['Left'][1], availableKeys['Left'][2]
+        elseif diffPos.x < 0 then
+            dx, dy = availableKeys['Right'][1], availableKeys['Right'][2]
+        else return end
+    elseif math.abs(diffPos.x) < 0.46 then
+        if diffPos.y > 0 then
+            dx, dy = availableKeys['Up'][1], availableKeys['Up'][2]
+        elseif diffPos.y < 0 then
+            dx, dy = availableKeys['Down'][1], availableKeys['Down'][2]
+        else return end
+    else
+        return
+    end
+
+    local pPos = player:getPosition()
+    local target = { x = pPos.x + (dx or 0), y = pPos.y + (dy or 0), z = pPos.z }
+    local tile = g_map.getTile(target)
+    if not tile then return end
+
+    local top = tile:getTopUseThing() or tile:getTopThing()
+    if not top then return end
+
+    if top:isMultiUse() then
+        useWith(top, player)
+    else
+        g_game.use(top)
+    end
+end
+
+-- Macro ativo sempre
+macro(50, function()
+    if not bugMapMobile.pointer then
+        bugMapMobile.setupAttempts = (bugMapMobile.setupAttempts or 0) + 1
+        if not setupPointer() then
+            if bugMapMobile.setupAttempts > 6 then
+                return -- para de tentar depois de algumas falhas
+            end
+            return
+        end
+        bugMapMobile.setupAttempts = 0
+    end
+    bugMapMobile.logic()
+end)
+
+
+
+-- Escadas/TP Mobile (F1)
+ClosestStair = {}
+ClosestStair.tile = nil
+ClosestStair.aditionalTiles = {1948,1067,595,5293,5542,1648,1666,1678,1949,13296,1646,5111,7771,8657,1680,6264,1664,6262,5291,6905,8265,8263,7727,7725,6896,6207,8367}
+ClosestStair.ignoredTiles = {7804}
+ClosestStair.walkTime = now
+
+-- 🔹 Macro que detecta o tile mais próximo válido
+ClosestStair.macro = macro(200, function()
+    local tiles = g_map.getTiles(posz())
+    local playerPos = pos()
+    local closestTile = nil
+
+    for _, tile in ipairs(tiles) do
+        local tilePosition = tile:getPosition()
+        local tileDistance = getDistanceBetween(playerPos, tilePosition)
+        local minimapColor = g_map.getMinimapColor(tilePosition)
+        local StairColor = minimapColor == 210
+        local items = tile:getItems()
+
+        if StairColor and not tile:isPathable() then
+            local hasIgnored = false
+            for _, item in ipairs(items) do
+                if table.find(ClosestStair.ignoredTiles, item:getId()) then
+                    hasIgnored = true
+                    break
+                end
+            end
+            if not hasIgnored and (closestTile == nil or tileDistance < getDistanceBetween(playerPos, closestTile:getPosition())) then
+                closestTile = tile
+            end
+        else
+            for _, item in ipairs(items) do
+                if table.find(ClosestStair.aditionalTiles, item:getId()) then
+                    if closestTile == nil or tileDistance < getDistanceBetween(playerPos, closestTile:getPosition()) then
+                        closestTile = tile
+                        break
+                    end
+                end
+            end
+        end
+    end
+
+    if ClosestStair.tile then
+        ClosestStair.tile:setText("")
+    end
+    ClosestStair.tile = closestTile
+    if ClosestStair.tile then
+        ClosestStair.tile:setText("Press F1")
+    end
+end)
+
+-- 🔹 Checagem da tecla F1
+macro(100, function()
+    local g_keyboard = modules.corelib.g_keyboard
+    if not g_keyboard.isKeyPressed('F1') then return end
+    local tile = ClosestStair.tile
+    if not tile then
+        return modules.game_textmessage.displayGameMessage("Nenhuma escada/TP encontrada")
+    end
+
+    local tilePos = tile:getPosition()
+    local distance = getDistanceBetween(pos(), tilePos)
+
+    if tile:canShoot() then
+        use(tile:getTopUseThing())
+    else
+        autoWalk(tilePos, 100, {ignoreNonPathable=true, precision=1, ignoreCreatures=false, ignoreStairs=true})
+    end
+
+    if (ClosestStair.walkTime < now and distance == 1) then
+        CaveBot.walkTo(tilePos, 1, {precision=1})
+        ClosestStair.walkTime = now + 1
+    end
+end)
