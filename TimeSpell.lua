@@ -1,5 +1,5 @@
 -- Tools UI (Activate & Setup);
-setDefaultTab("Tools")
+setDefaultTab("Others")
 timeSpellPanelName = "timespellbot"
 local ui = setupUI([[
 Panel
