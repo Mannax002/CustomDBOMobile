@@ -179,7 +179,7 @@ modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOM
     assert(loadstring(script))()
 end);
 
-modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/script.lua', function(script)
+modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/Bless.lua', function(script)
 assert(loadstring(script))()
 end);
 UI.Separator()
