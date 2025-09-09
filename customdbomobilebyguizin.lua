@@ -167,14 +167,6 @@ end)
 
 UI.Separator()
 
-modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/TimeSpell.lua', function(script)
-    assert(loadstring(script))()
-end);
-
-modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/Combo.lua', function(script)
-    assert(loadstring(script))()
-end);
-
 modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/TravelDBO.lua', function(script)
     assert(loadstring(script))()
 end);
