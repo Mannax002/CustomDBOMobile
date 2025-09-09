@@ -69,7 +69,7 @@
 	  end
   
 	  if (value == true and tyrBot) then
-		  tyrBot.comboDelay = now + 500;
+		  tyrBot.Delay = now + 500;
 	  end
   
 	  if (value == false and stackMonster ~= nil and stackMonster == g_game.getAttackingCreature()) then
@@ -713,6 +713,88 @@ local waitingMsg;
 
 
 UI.Separator()
+local getDistance = function(p1, p2)
+
+    local distx = math.abs(p1.x - p2.x);
+    local disty = math.abs(p1.y - p2.y);
+
+    return math.sqrt(distx * distx + disty * disty);
+end
+
+getWalkingPosition = function(pos)
+	
+	local tiles = g_map.getTiles(pos.z);
+	local playerPos = player:getPosition();
+	local walkPos;
+	
+	for _, tile in ipairs(tiles) do
+		local tilePos = tile:getPosition();
+		if (tilePos ~= nil and tile:isWalkable() and tile:isPathable()) then
+			if (not walkPos) then
+				if (findPath(playerPos, tilePos, 20)) then
+					walkPos = tilePos;
+				end
+			else
+				local distance = getDistance(tilePos, pos);
+				local currentDistance = getDistance(walkPos, pos);
+				if (distance < currentDistance and findPath(playerPos, tilePos, 20)) then
+					walkPos = tilePos;
+				end
+			end
+		end
+	end
+	
+	return walkPos;
+end
+
+
+local nextPosition = {
+	{x = 0, y = -1},
+	{x = 1, y = 0},
+	{x = 0, y = 1},
+	{x = -1, y = 0},
+	{x = 1, y = -1},
+	{x = 1, y = 1},
+	{x = -1, y = 1},
+	{x = -1, y = -1}
+};
+
+local getPosition = function(pos, dir)
+    local nextPos = nextPosition[dir + 1]
+
+    pos.x = pos.x + nextPos.x
+    pos.y = pos.y + nextPos.y
+
+    return pos
+end
+
+useWalk = function(pos)
+    local playerPos = player:getPosition();
+    local path = findPath(playerPos, pos, 20);
+    if (not path) then return; end
+	
+	local last_value;
+	local stopped;
+    for index, direction in ipairs(path) do
+		if (index > 5) then
+			stopped = true;
+			break;
+		end
+        playerPos = getPosition(playerPos, direction);
+		last_value = direction;
+    end
+	
+	if (not stopped and last_value) then
+		playerPos = getPosition(playerPos, last_value);
+	end
+	
+    local tile = g_map.getTile(playerPos);
+    local topThing = tile and tile:getTopUseThing();
+    if (topThing) then
+		use(topThing);
+    end
+end
+
 UI.Separator()
 
 Maker = {}
@@ -772,6 +854,36 @@ onTalk(function(name, level, mode, text, channelId, pos)
 end)
 
 UI.Separator()
+local specialBuffs = {
+  "Justice Aura",
+  "Body manipulation",
+  "Ultimate fusion energy",
+  "kinzoku no kawa",
+  "hakaishin aura"
+}
+
+local defaultBuff = "Ultimate Power Up"
+local cooldown = 60000 -- 60 segundos
+local lastBuffTime = 0
+local currentSpellIndex = 1
+
+macro(1000, "Auto Buff", function()
+  if (now - lastBuffTime) < cooldown then
+    return
+  end
+
+  -- Se ainda há magias especiais para tentar
+  if currentSpellIndex <= #specialBuffs then
+    say(specialBuffs[currentSpellIndex])
+    currentSpellIndex = currentSpellIndex + 1
+  else
+    -- Nenhuma magia especial funcionou, usa Ultimate Power Up
+    say(defaultBuff)
+    -- Reset para a próxima tentativa após cooldown
+    currentSpellIndex = 1
+    lastBuffTime = now
+  end
+end)
 UI.Separator()
 
 
@@ -1138,129 +1250,7 @@ end)
 
 
 
--- STORAGE AUTOMÁTICO DE MAGIAS POR VOCAÇÃO
-assert(type(table.insert) == "function", "table.insert foi sobrescrito!")
-local name = name()
-local storage = global_storage or storage
 
-if type(storage.autoSpells) ~= "table" then
-    storage.autoSpells = {}
-end
-
-local vocation = nil
-local spells = nil
-
--- Lista padrão de magias por vocação (pode editar)
-local defaultSpells = {
-    ["goku"] = {buffSpell = "Ultimate Power Up"},
-    ["pan"] = {buffSpell = "Ultimate Power Up"},
-    ["son"] = {buffSpell = "Ultimate Power Up"},
-    ["gogeta"] = {buffSpell = "fusion power"},
-    ["vegeto"] = {buffSpell = "fusion power"},
-    ["paikuhan"] = {buffSpell = "Ultimate Power Up"},
-    ["jiren"] = {buffSpell = "Justice Aura"},
-    ["hitto"] = {buffSpell = "Ultimate Power Up"},
-    ["android"] = {buffSpell = "Body manipulation"},
-    ["android 21"] = {buffSpell = "Body manipulation"},
-    ["bills"] = {buffSpell = "Ultimate Power Up"},
-    ["kefla"] = {buffSpell = "Ultimate fusion energy"},
-    ["vegeta"] = {buffSpell = "Ultimate Power Up"},
-    ["picolo"] = {buffSpell = "Ultimate Power Up"},
-    ["c17"] = {buffSpell = "Ultimate Power Up"},
-    ["gohan"] = {buffSpell = "Ultimate Power Up"},
-    ["trunks"] = {buffSpell = "Ultimate Power Up"},
-    ["cell"] = {buffSpell = "Ultimate Power Up"},
-    ["cooler"] = {buffSpell = "Ultimate Power Up"},
-    ["freeza"] = {buffSpell = "Ultimate Power Up"},
-    ["majin buu"] = {buffSpell = "Ultimate Power Up"},
-    ["c18"] = {buffSpell = "Ultimate Power Up"},
-    ["uub"] = {buffSpell = "Ultimate Power Up"},
-    ["goten"] = {buffSpell = "Ultimate Power Up"},
-    ["chibi trunks"] = {buffSpell = "Ultimate Power Up"},
-    ["dende"] = {buffSpell = "Ultimate Power Up"},
-    ["tsuful"] = {buffSpell = "Ultimate Power Up"},
-    ["bardock"] = {buffSpell = "Ultimate Power Up"},
-    ["kuririn"] = {buffSpell = "Ultimate Power Up"},
-    ["kaio"] = {buffSpell = "Ultimate Power Up"},
-    ["janemba"] = {buffSpell = "Ultimate Power Up"},
-    ["turles"] = {buffSpell = "Ultimate Power Up"},
-    ["bulma"] = {buffSpell = "Ultimate Power Up"},
-    ["shenron"] = {buffSpell = "Ultimate Power Up"},
-    ["tapion"] = {buffSpell = "Ultimate Power Up"},
-    ["kame"] = {buffSpell = "Ultimate Power Up"},
-    ["king vegeta"] = {buffSpell = "Ultimate Power Up"},
-    ["king"] = {buffSpell = "Ultimate Power Up"},
-    ["zaiko"] = {buffSpell = "Ultimate Power Up"},
-    ["chilled"] = {buffSpell = "Ultimate Power Up"},
-    ["goku black"] = {buffSpell = "Ultimate Power Up"},
-    ["kagome"] = {buffSpell = "kinzoku no kawa"},
-    ["c16"] = {buffSpell = "Ultimate Power Up"},
-    ["toppo"] = {buffSpell = "hakaishin aura"},
-    ["broly super"] = {buffSpell = "Ultimate Power Up"},
-    ["broly"] = {buffSpell = "Ultimate Power Up"},
-    ["tenshinhan"] = {buffSpell = "Ultimate Power Up"},
-    ["yamcha"] = {buffSpell = "Ultimate Power Up"},
-    ["raditz"] = {buffSpell = "Ultimate Power Up"},
-    ["jenk"] = {buffSpell = "Ultimate Power Up"}
-}
-
--- Detecta vocação automaticamente ao olhar para o player
-macro(2000, function()
-    if vocation == nil then
-        if player:getTile():getTopThing() == player then
-            g_game.look(player)
-        end
-    end
-end)
-
-onTextMessage(function(mode, text)
-    if mode ~= 20 then return end
-    if not text:starts("You see yourself.") then return end
-    
-    -- Extrair vocação do texto
-    local vocation = nil
-    local text_lower = text:lower()
-    local start_pos = text_lower:find("you are ")
-    if start_pos then
-        local after = text:sub(start_pos + 8)
-        local end_pos = #after + 1
-        local patterns = {"%.", " member", " and", " leader", " of", " "}
-        for _, p in ipairs(patterns) do
-            local i = after:lower():find(p)
-            if i and i < end_pos then
-                end_pos = i
-            end
-        end
-        vocation = after:sub(1, end_pos - 1):gsub("%.", ""):lower():gsub("^%s*(.-)%s*$", "%1")
-    end
-
-    -- Salva ou carrega spells
-    if storage.autoSpells[vocation] == nil then
-        storage.autoSpells[vocation] = defaultSpells[vocation] or {buffSpell=""}
-    end
-
-    spells = storage.autoSpells[vocation]
-end)
-
--- MACRO PARA BUFF AUTOMÁTICO
-macro(1000, function()
-    if not spells then return end
-    local time = storage.buffTime or 0
-    if time < os.time() and spells.buffSpell ~= "" then
-        say(spells.buffSpell)
-    end
-end)
-
--- Atualiza buffTime quando o buff é falado
-onTalk(function(name, level, mode, text)
-    if name ~= player:getName() then return end
-    if not spells then return end
-    if spells.buffSpell == "" then return end
-    
-    if text:trim():lower() == spells.buffSpell:trim():lower() then
-        storage.buffTime = os.time() + 60
-    end
-end)
 
 
 
