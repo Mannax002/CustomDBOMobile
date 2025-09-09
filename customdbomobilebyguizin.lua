@@ -167,12 +167,19 @@ end)
 
 UI.Separator()
 
-
-modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mobile-NTO/refs/heads/main/GateKeaper.lua', function(script)
-assert(loadstring(script))()
+modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/TimeSpell.lua', function(script)
+    assert(loadstring(script))()
 end);
 
-modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/Custom-mobile-NTO/refs/heads/main/Linhadotempo.lua', function(script)
+modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/Combo.lua', function(script)
+    assert(loadstring(script))()
+end);
+
+modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/TravelDBO.lua', function(script)
+    assert(loadstring(script))()
+end);
+
+modules.corelib.HTTP.get('https://raw.githubusercontent.com/Mannax002/CustomDBOMobile/refs/heads/main/script.lua', function(script)
 assert(loadstring(script))()
 end);
 UI.Separator()
