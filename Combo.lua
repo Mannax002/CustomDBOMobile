@@ -1,3 +1,5 @@
+setDefaultTab ("Others")
+
 scriptFuncs = {}
 comboSpellsWidget = {}
 
